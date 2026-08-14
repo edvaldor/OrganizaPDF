@@ -1,0 +1,36 @@
+name: Publicar executável do Windows
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Instalar, testar e compilar
+        shell: pwsh
+        run: ./scripts/build_windows.ps1
+      - name: Empacotar
+        shell: pwsh
+        run: Compress-Archive -Path dist/OrganizaPDF/* -DestinationPath OrganizaPDF-Windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OrganizaPDF-Windows
+          path: OrganizaPDF-Windows.zip
+      - name: Criar release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: OrganizaPDF-Windows.zip
+          generate_release_notes: true
